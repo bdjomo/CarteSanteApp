@@ -8,6 +8,7 @@ namespace CarteSanteApp
         public DbSet<User> Users { get; set; }
         public DbSet<Client> Clients { get; set; }
         public DbSet<Archivage> Archives { get; set; }
+        public DbSet<VClient> VClients { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -39,6 +40,11 @@ namespace CarteSanteApp
             modelBuilder.Entity<User>()
                 .Property(u => u.RoleId)
                 .HasConversion<int>();
+
+            // View als schlüssellos deklarieren und mappen
+            modelBuilder.Entity<VClient>()
+                .HasNoKey()
+                .ToView("v_clients");
         }
     }
 }

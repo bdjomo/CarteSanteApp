@@ -26,6 +26,10 @@ namespace CarteSanteApp
         public FormMain()
         {
             InitializeComponent();
+
+            // Falls nicht im Designer zugewiesen, hier verknüpfen:
+            dgvClients.CellFormatting += dgvClients_CellFormatting;
+
         }
 
 
@@ -75,14 +79,16 @@ namespace CarteSanteApp
 
             // Assurer que LogOut et Close restent toujours visibles
             btn_LogOut.Visible = true;
-            btn_Close.Visible = true;
+            btn_Close.Visible = true; 
+            //dgvClients.Visible = false;
+            dgvUser.Visible = false;
 
             // 2. Afficher les boutons selon la valeur de CurrentDroit
             switch (CurrentDroit)
             {
                 case "READ_ONLY":
                     btn_ReadOnly.Visible = true;
-                    btn_ReadOnlyUser.Visible = true;
+                    btn_ReadOnlyUser.Visible = false;
                     break;
 
                 case "READ_DELETE":
@@ -136,7 +142,8 @@ namespace CarteSanteApp
                 using (var db = new AppDbContext())
                 {
                     // 1. Récupération des données de la table clients
-                    var clientsList = db.Clients.ToList();
+                    var clientsList = db.VClients.ToList();
+                    //var clientsList = db.Clients.ToList();
 
                     // 2. Liaison des données au DataGridView (ex: dgvClients)
                     dgvClients.DataSource = clientsList;
@@ -151,6 +158,26 @@ namespace CarteSanteApp
             catch (Exception ex)
             {
                 MessageBox.Show($"Erreur lors du chargement des clients : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void dgvClients_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            // Prüfen, ob wir in der gewünschten Spalte sind (Spaltenname "Status" oder "is_solde_positif")
+            if (dgvClients.Columns[e.ColumnIndex].Name == "Status" && e.Value != null)
+            {
+                string? statusValue = e.Value.ToString();
+
+                if (statusValue == "Solvable")
+                {
+                    e.CellStyle.BackColor = Color.LightGreen;
+                    e.CellStyle.ForeColor = Color.DarkGreen;
+                }
+                else if (statusValue == "Insolvable")
+                {
+                    e.CellStyle.BackColor = Color.LightCoral;
+                    e.CellStyle.ForeColor = Color.DarkRed;
+                }
             }
         }
 
@@ -337,6 +364,91 @@ namespace CarteSanteApp
             {
                 using (var db = new AppDbContext())
                 {
+                    VClient? foundClient = null;
+
+                    // CAS 1 : Recherche prioritaire par ID (ClientId)
+                    if (!string.IsNullOrEmpty(searchClientID))
+                    {
+                        if (int.TryParse(searchClientID, out int searchID))
+                        {
+                            // Hier VClients statt Clients nutzen
+                            foundClient = db.VClients.FirstOrDefault(c => c.ClientId == searchID);
+                        }
+                        else
+                        {
+                            MessageBox.Show("L'ID doit être un nombre entier valide.",
+                                            "Attention", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                    }
+                    // CAS 2 : Recherche par Nom et Prénom
+                    else if (!string.IsNullOrEmpty(searchName) && !string.IsNullOrEmpty(searchVorname))
+                    {
+                        // 1. Suche zuerst NUR nach Nom und Prénom in VClients
+                        var clientFoundByName = db.VClients.FirstOrDefault(c =>
+                            c.Nom.ToLower() == searchName.ToLower() &&
+                            c.Prenom.ToLower() == searchVorname.ToLower());
+
+                        if (clientFoundByName != null)
+                        {
+                            // 2. Kunde existiert: Prüfe das Geburtsdatum (DateNaissance)
+                            if (clientFoundByName.DateNaissance.HasValue &&
+                                clientFoundByName.DateNaissance.Value.Date == dtp_BirthDate.Value.Date)
+                            {
+                                foundClient = clientFoundByName;
+                            }
+                            else
+                            {
+                                MessageBox.Show("La date de naissance ne correspond pas à ce nom et prénom.",
+                                                "Erreur de date",
+                                                MessageBoxButtons.OK,
+                                                MessageBoxIcon.Warning);
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("Aucun client trouvé avec ce nom et prénom.",
+                                            "Introuvable",
+                                            MessageBoxButtons.OK,
+                                            MessageBoxIcon.Information);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Veuillez saisir soit un ID, soit le Nom, le Prénom et la date de naissance du client.",
+                                        "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    // 2. Affichage des résultats dans le DataGridView
+                    if (foundClient != null)
+                    {
+                        dgvClients.DataSource = new List<VClient> { foundClient };
+                        ConfigureReadOnlyGrid(dgvClients); // Zeile hinzufügen
+                        dgvClients.ClearSelection();       // Zeile hinzufügen, um blaue Markierung aufzuheben
+                        dgvClients.Visible = true;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Aucun client correspondant trouvé dans la base de données.",
+                                        "Introuvable", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        dgvClients.DataSource = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erreur lors de la recherche du client : {ex.Message}",
+                                "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            /*
+            try
+            {
+                using (var db = new AppDbContext())
+                {
                     Client? foundClient = null;
 
                     // CAS 1 : Recherche prioritaire par ID (ClientId)
@@ -388,11 +500,11 @@ namespace CarteSanteApp
 
                         // Remarque : Si vous avez un DateTimePicker (ex: dtpDateNaissance), 
                         // vous pouvez ajouter && c.DateNaissance.Date == dtpDateNaissance.Value.Date
-                        /*   foundClient = db.Clients.FirstOrDefault(c =>
-                               (c.Nom.ToLower() == searchName.ToLower() &&
-                               c.Prenom.ToLower() == searchVorname.ToLower()) &&
-                               c.DateNaissance.Date == dtp_BirthDate.Value.Date);
-                        */
+                        //   foundClient = db.Clients.FirstOrDefault(c =>
+                        //       (c.Nom.ToLower() == searchName.ToLower() &&
+                        //        c.Prenom.ToLower() == searchVorname.ToLower()) &&
+                        //       c.DateNaissance.Date == dtp_BirthDate.Value.Date);
+                        
 
                     }
                     else
@@ -421,6 +533,7 @@ namespace CarteSanteApp
                 MessageBox.Show($"Erreur lors de la recherche du client : {ex.Message}",
                                 "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            */
         }
 
 
