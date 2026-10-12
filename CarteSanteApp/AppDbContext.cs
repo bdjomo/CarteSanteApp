@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CarteSanteApp
 {
@@ -15,7 +16,8 @@ namespace CarteSanteApp
             if (!optionsBuilder.IsConfigured)
             {
                 // Port explizit auf 5433 setzen                
-                string connectionString = "Host=localhost;Port=5433;Database=CarteSanteElectronique;Username=postgres;Password=123";
+                string connectionString = "Host=192.168.178.112;Port=5433;Database=CarteSanteElectronique;Username=postgres;Password=123";
+                //tring connectionString = "Host=localhost;Port=5433;Database=CarteSanteElectronique;Username=postgres;Password=123";
 
                 // Maps den C#-String/Enum direkt auf den PostgreSQL-Typ user_droit
                 var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);

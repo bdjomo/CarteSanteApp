@@ -73,7 +73,7 @@ namespace CarteSanteApp
 
         [Column("deleted_by_user_id")]
         public int? DeletedByUserId { get; set; }
-        [Column("status")]
+        [Column("Status")]
         public string? Status { get; set; }
     }
 }

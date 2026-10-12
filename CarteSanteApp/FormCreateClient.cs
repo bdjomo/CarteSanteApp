@@ -126,9 +126,18 @@ namespace CarteSanteApp
                     }
                 }
             }
+            /*
             catch (Exception ex)
             {
                 MessageBox.Show($"Erreur lors de l'enregistrement : {ex.Message}",
+                                "Erreur BDD", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }*/
+            catch (Exception ex)
+            {
+                // Récupère l'erreur détaillée de PostgreSQL si elle existe
+                string detailedMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+
+                MessageBox.Show($"Erreur lors de l'enregistrement : {detailedMessage}",
                                 "Erreur BDD", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
