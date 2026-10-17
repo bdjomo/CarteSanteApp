@@ -67,5 +67,8 @@ namespace CarteSanteApp
 
         [Column("Status")]
         public string? Status { get; set; }
+
+        [Column("numero_carte")]
+        public string? NumeroCarte { get; set; }
     }
 }

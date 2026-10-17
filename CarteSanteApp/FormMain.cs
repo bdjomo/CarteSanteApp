@@ -437,12 +437,18 @@ namespace CarteSanteApp
                         dgvClients.DataSource = null;
                     }
                 }
+
+                // Préparer le champ pour la prochaine lecture RFID (2ème Partie du Projet)
+                textBox_ClientID.Focus();
+                textBox_ClientID.SelectAll();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Erreur lors de la recherche du client : {ex.Message}",
                                 "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+
 
             /*
             try
@@ -534,6 +540,23 @@ namespace CarteSanteApp
                                 "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             */
+        }
+
+        /*
+         * 2ème Partie du Projet: l'événement KeyDown sur textBox_ClientID permet que, quand la carte est posée sur la lecture RFID, 
+         * les rechreches des données du client son automatiquement déclenchées et sont affichées   
+         */
+        private void textBox_ClientID_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Le lecteur RFID simule la touche 'Enter' (Entrée) à la fin de la lecture
+            if (e.KeyCode == Keys.Enter)
+            {
+                // Empêche le son "bip" agaçant de Windows
+                e.SuppressKeyPress = true;
+
+                // Déclenche automatiquement votre méthode de recherche existante
+                btn_ReadOnly_OneClient_Click(sender, e);
+            }
         }
 
 
